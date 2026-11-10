@@ -1,0 +1,1197 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>관산중학교 2048 퍼즐 게임</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome for Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;800;900&family=Fredoka:wght@600;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            school: {
+              50: '#f0f7ff',
+              100: '#e0effe',
+              500: '#2563eb',
+              600: '#1d4ed8',
+              700: '#1e40af',
+              800: '#1e3a8a',
+              900: '#172554',
+            },
+            board: '#bbada0',
+            cellEmpty: '#cdc1b4',
+          },
+          fontFamily: {
+            sans: ['Pretendard', 'sans-serif'],
+            number: ['Fredoka', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Prevent default scrolling & elastic bounce on touch devices while playing */
+    .touch-none-game {
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    /* Dark theme tile colors with vibrant accent styling */
+    .tile-2 { background-color: #2e3846; color: #f1f5f9; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08); }
+    .tile-4 { background-color: #3b4252; color: #f8fafc; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12); }
+    .tile-8 { background-color: #d97706; color: #ffffff; box-shadow: 0 0 12px rgba(217, 119, 6, 0.4); }
+    .tile-16 { background-color: #ea580c; color: #ffffff; box-shadow: 0 0 14px rgba(234, 88, 12, 0.45); }
+    .tile-32 { background-color: #e11d48; color: #ffffff; box-shadow: 0 0 16px rgba(225, 29, 72, 0.5); }
+    .tile-64 { background-color: #dc2626; color: #ffffff; box-shadow: 0 0 20px rgba(220, 38, 38, 0.6); }
+    .tile-128 { background-color: #eab308; color: #0f172a; box-shadow: 0 0 22px rgba(234, 179, 8, 0.65); font-weight: 900; }
+    .tile-256 { background-color: #facc15; color: #0f172a; box-shadow: 0 0 26px rgba(250, 204, 21, 0.75); font-weight: 900; }
+    .tile-512 { background-color: #10b981; color: #ffffff; box-shadow: 0 0 30px rgba(16, 185, 129, 0.75); font-weight: 900; }
+    .tile-1024 { background-color: #06b6d4; color: #ffffff; box-shadow: 0 0 35px rgba(6, 182, 212, 0.85); font-size: 1.8rem; font-weight: 900; }
+    .tile-2048 { background-color: #8b5cf6; color: #ffffff; box-shadow: 0 0 42px rgba(139, 92, 246, 0.95); font-size: 1.8rem; font-weight: 900; }
+    .tile-super { background-color: #ec4899; color: #ffffff; box-shadow: 0 0 45px rgba(236, 72, 153, 1); font-size: 1.6rem; font-weight: 900; }
+
+    /* Pop animation on tile spawn */
+    @keyframes tilePop {
+      0% { transform: scale(0); opacity: 0; }
+      70% { transform: scale(1.15); opacity: 1; }
+      100% { transform: scale(1); }
+    }
+    .tile-new {
+      animation: tilePop 0.22s ease-out backwards;
+    }
+
+    /* Merge pulse animation */
+    @keyframes tileMerge {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.22); }
+      100% { transform: scale(1); }
+    }
+    .tile-merged {
+      animation: tileMerge 0.24s ease-in-out;
+    }
+
+    /* Floating score point feedback animation */
+    @keyframes scoreFloat {
+      0% { transform: translateY(0); opacity: 1; }
+      100% { transform: translateY(-30px); opacity: 0; }
+    }
+    .score-addition {
+      position: absolute;
+      right: 12px;
+      top: -12px;
+      font-weight: 800;
+      color: #4ade80;
+      animation: scoreFloat 0.75s ease-out forwards;
+      pointer-events: none;
+    }
+
+    /* Custom dark scrollbar for tutorial */
+    .custom-scroll::-webkit-scrollbar {
+      width: 6px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background-color: #334155;
+      border-radius: 9999px;
+    }
+  </style>
+</head>
+<body class="bg-[#0b0d11] text-slate-100 font-sans min-h-screen flex flex-col items-center justify-between p-3 sm:p-6 select-none">
+
+  <!-- ============================================== -->
+  <!-- 1. LOGIN / GATEWAY SCREEN (관산중학교 진입화면) -->
+  <!-- ============================================== -->
+  <div id="loginScreen" class="w-full max-w-md mx-auto my-auto bg-[#141820] rounded-3xl shadow-2xl p-6 sm:p-8 border border-slate-800 transition-all duration-300">
+    <div class="text-center mb-7">
+      <div class="inline-flex items-center justify-center w-20 h-20 bg-school-600/20 text-school-500 rounded-2xl mb-4 shadow-inner ring-2 ring-school-500/30">
+        <i class="fa-solid fa-graduation-cap text-4xl"></i>
+      </div>
+      <h1 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">관산중학교 2048</h1>
+      <p class="text-xs sm:text-sm text-slate-400 mt-1.5" id="loginSubTitle">학번과 이름을 입력하고 두뇌 퍼즐에 도전하세요!</p>
+    </div>
+
+    <!-- Language Quick Select in Login -->
+    <div class="flex justify-center items-center gap-1.5 mb-6 p-1.5 bg-[#1b212c] rounded-2xl border border-slate-800">
+      <button onclick="setLanguage('ko')" class="lang-btn px-2.5 py-1.5 text-xs font-bold rounded-xl transition-all" data-lang="ko">🇰🇷 한국어</button>
+      <button onclick="setLanguage('en')" class="lang-btn px-2.5 py-1.5 text-xs font-bold rounded-xl transition-all" data-lang="en">🇺🇸 EN</button>
+      <button onclick="setLanguage('zh')" class="lang-btn px-2.5 py-1.5 text-xs font-bold rounded-xl transition-all" data-lang="zh">🇨🇳 中文</button>
+      <button onclick="setLanguage('ru')" class="lang-btn px-2.5 py-1.5 text-xs font-bold rounded-xl transition-all" data-lang="ru">🇷🇺 RU</button>
+    </div>
+
+    <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4">
+      <div>
+        <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5" id="labelStudentId">
+          학번 (Student ID)
+        </label>
+        <div class="relative">
+          <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+            <i class="fa-solid fa-id-card"></i>
+          </div>
+          <input 
+            type="text" 
+            id="studentIdInput" 
+            placeholder="예: 20315 (2학년 3반 15번)" 
+            maxlength="10"
+            required
+            class="w-full pl-10 pr-4 py-3 bg-[#0d1017] border border-slate-700/80 rounded-xl font-medium text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-school-500 focus:border-school-500 transition-all text-sm"
+          />
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5" id="labelStudentName">
+          이름 (Full Name)
+        </label>
+        <div class="relative">
+          <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+            <i class="fa-solid fa-user"></i>
+          </div>
+          <input 
+            type="text" 
+            id="studentNameInput" 
+            placeholder="예: 홍길동" 
+            maxlength="15"
+            required
+            class="w-full pl-10 pr-4 py-3 bg-[#0d1017] border border-slate-700/80 rounded-xl font-medium text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-school-500 focus:border-school-500 transition-all text-sm"
+          />
+        </div>
+      </div>
+
+      <div id="loginFeedback" class="hidden text-rose-400 text-xs font-medium bg-rose-950/40 p-2.5 rounded-xl border border-rose-800/60 text-center"></div>
+
+      <button 
+        type="submit" 
+        class="w-full py-3.5 px-4 bg-gradient-to-r from-school-600 to-school-500 hover:from-school-500 hover:to-school-600 active:scale-[0.98] text-white font-extrabold rounded-xl shadow-lg shadow-school-600/30 transition-all text-base flex items-center justify-center gap-2 group mt-2"
+      >
+        <span id="btnStartGameText">게임 시작</span>
+        <i class="fa-solid fa-play text-sm group-hover:translate-x-1 transition-transform"></i>
+      </button>
+    </form>
+
+    <div class="mt-6 pt-5 border-t border-slate-800 text-center text-xs text-slate-500">
+      <p>Gwansan Middle School Brain Training Center</p>
+    </div>
+  </div>
+
+
+  <!-- ============================================== -->
+  <!-- 2. MAIN GAME SCREEN                            -->
+  <!-- ============================================== -->
+  <div id="gameScreen" class="hidden w-full max-w-[480px] mx-auto flex flex-col items-center">
+    
+    <!-- Top Header: Student Badge & Logout -->
+    <div class="w-full bg-[#141820]/90 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-slate-800 shadow-sm flex items-center justify-between mb-3 text-xs sm:text-sm">
+      <div class="flex items-center gap-2 font-semibold text-slate-200 truncate">
+        <span class="inline-flex items-center justify-center w-7 h-7 bg-school-600/20 text-school-400 rounded-lg text-xs">
+          <i class="fa-solid fa-school"></i>
+        </span>
+        <span class="truncate">
+          <span class="text-school-400 font-extrabold">관산중</span> 
+          <span id="headerStudentInfo" class="text-slate-100 font-bold ml-1"></span>
+        </span>
+      </div>
+      <button 
+        onclick="handleLogout()" 
+        class="flex-shrink-0 text-slate-400 hover:text-rose-400 text-xs font-medium px-2 py-1 rounded-lg hover:bg-rose-950/40 transition-colors"
+        title="로그아웃 / 다른 학생으로 로그인"
+      >
+        <i class="fa-solid fa-right-from-bracket mr-1"></i>
+        <span id="textLogout">변경</span>
+      </button>
+    </div>
+
+    <!-- Multilingual Bar (Language Selector: KO, EN, ZH, RU always visible) -->
+    <div class="w-full bg-[#141820] p-2 rounded-2xl border border-slate-800 shadow-sm mb-4">
+      <div class="flex items-center justify-between gap-1">
+        <span class="text-[11px] font-bold text-slate-400 px-2 flex items-center gap-1">
+          <i class="fa-solid fa-globe text-school-400"></i>
+          <span>언어 / Lang</span>
+        </span>
+        <div class="flex items-center gap-1">
+          <button onclick="setLanguage('ko')" class="lang-btn px-2.5 py-1 text-xs font-bold rounded-lg transition-all" data-lang="ko">🇰🇷 한국어</button>
+          <button onclick="setLanguage('en')" class="lang-btn px-2.5 py-1 text-xs font-bold rounded-lg transition-all" data-lang="en">🇺🇸 EN</button>
+          <button onclick="setLanguage('zh')" class="lang-btn px-2.5 py-1 text-xs font-bold rounded-lg transition-all" data-lang="zh">🇨🇳 中文</button>
+          <button onclick="setLanguage('ru')" class="lang-btn px-2.5 py-1 text-xs font-bold rounded-lg transition-all" data-lang="ru">🇷🇺 RU</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Game Title & Score Board -->
+    <div class="w-full flex items-center justify-between mb-4">
+      <div>
+        <h1 class="text-4xl sm:text-5xl font-black text-white tracking-tighter font-number">2048</h1>
+        <div class="text-[11px] sm:text-xs font-semibold text-slate-400" id="gameTagline">
+          숫자를 합쳐 2048을 완성하세요!
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <!-- Current Score Card -->
+        <div class="relative bg-[#161b24] border border-slate-800 text-white rounded-xl px-3 sm:px-4 py-2 min-w-[70px] sm:min-w-[85px] text-center shadow-inner">
+          <span id="scoreAdditionContainer"></span>
+          <div class="text-[10px] sm:text-[11px] font-bold text-school-300 uppercase leading-none" id="labelScore">
+            점수
+          </div>
+          <div id="currentScore" class="text-base sm:text-xl font-black font-number mt-0.5 text-white">0</div>
+        </div>
+
+        <!-- Best Score Card -->
+        <div class="bg-[#161b24] border border-slate-800 text-white rounded-xl px-3 sm:px-4 py-2 min-w-[70px] sm:min-w-[85px] text-center shadow-inner">
+          <div class="text-[10px] sm:text-[11px] font-bold text-amber-300 uppercase leading-none" id="labelBest">
+            최고점수
+          </div>
+          <div id="bestScore" class="text-base sm:text-xl font-black font-number mt-0.5 text-amber-400">0</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action Bar: How to play & New Game buttons -->
+    <div class="w-full flex items-center justify-between mb-3.5 gap-2">
+      <!-- Tutorial Modal Open Button -->
+      <button 
+        onclick="openTutorialModal()" 
+        class="flex-1 py-2.5 px-3 bg-[#161b24] hover:bg-[#1f2633] border border-slate-700/80 active:scale-95 text-slate-200 font-bold rounded-xl shadow-sm transition-all text-xs sm:text-sm flex items-center justify-center gap-1.5"
+      >
+        <i class="fa-solid fa-circle-question text-school-400"></i>
+        <span id="btnTutorialText">게임 방법</span>
+      </button>
+
+      <!-- New Game Button -->
+      <button 
+        onclick="restartGame()" 
+        class="flex-1 py-2.5 px-3 bg-school-600 hover:bg-school-500 active:scale-95 text-white font-bold rounded-xl shadow-md shadow-school-600/30 transition-all text-xs sm:text-sm flex items-center justify-center gap-1.5"
+      >
+        <i class="fa-solid fa-rotate-right"></i>
+        <span id="btnNewGameText">새 게임</span>
+      </button>
+    </div>
+
+    <!-- Game Board Container -->
+    <div class="relative w-full aspect-square bg-[#13171f] p-2.5 sm:p-3.5 rounded-2xl shadow-2xl touch-none-game border-4 border-[#1f2633]">
+      <!-- Background 4x4 Grid Cells (Dark empty slots) -->
+      <div class="grid grid-cols-4 grid-rows-4 gap-2 sm:gap-3 w-full h-full">
+        <!-- 16 Static Dark Background Cell Holes -->
+        <div class="bg-[#1f2532] rounded-xl"></div>
+        <div class="bg-[#1f2532] rounded-xl"></div>
+        <div class="bg-[#1f2532] rounded-xl"></div>
+        <div class="bg-[#1f2532] rounded-xl"></div>
+        <div class="bg-[#1f2532] rounded-xl"></div>
+        <div class="bg-[#1f2532] rounded-xl"></div>
+        <div class="bg-[#1f2532] rounded-xl"></div>
+        <div class="bg-[#1f2532] rounded-xl"></div>
+        <div class="bg-[#1f2532] rounded-xl"></div>
+        <div class="bg-[#1f2532] rounded-xl"></div>
+        <div class="bg-[#1f2532] rounded-xl"></div>
+        <div class="bg-[#1f2532] rounded-xl"></div>
+        <div class="bg-[#1f2532] rounded-xl"></div>
+        <div class="bg-[#1f2532] rounded-xl"></div>
+        <div class="bg-[#1f2532] rounded-xl"></div>
+        <div class="bg-[#1f2532] rounded-xl"></div>
+      </div>
+
+      <!-- Active Dynamic Tile Grid (Overlaid on top of cells) -->
+      <div id="tileContainer" class="absolute inset-0 p-2.5 sm:p-3.5 grid grid-cols-4 grid-rows-4 gap-2 sm:gap-3 pointer-events-none">
+        <!-- Tiles dynamically injected here via JavaScript -->
+      </div>
+
+      <!-- Overlay: Game Over Screen -->
+      <div id="gameOverOverlay" class="absolute inset-0 bg-[#0b0d11]/90 backdrop-blur-md rounded-2xl flex flex-col items-center justify-center text-center p-6 hidden z-20 border border-rose-900/40">
+        <div class="w-16 h-16 bg-rose-600/20 text-rose-400 border border-rose-500/40 rounded-full flex items-center justify-center text-3xl mb-3 shadow-lg shadow-rose-950/60">
+          <i class="fa-solid fa-skull"></i>
+        </div>
+        <h2 class="text-2xl sm:text-3xl font-black text-white mb-1" id="gameOverTitle">게임 오버</h2>
+        <p class="text-xs sm:text-sm text-slate-300 mb-5" id="gameOverSub">더 이상 이동할 수 없습니다!</p>
+        <div class="bg-white/5 border border-white/10 px-4 py-2 rounded-xl text-white font-mono text-sm mb-5">
+          <span id="finalScoreLabel">최종 점수</span>: <span id="finalScoreVal" class="font-bold text-amber-300">0</span>
+        </div>
+        <button 
+          onclick="restartGame()" 
+          class="px-6 py-3 bg-school-600 hover:bg-school-500 text-white font-bold rounded-xl shadow-lg shadow-school-600/30 transition-transform active:scale-95 text-sm sm:text-base flex items-center gap-2"
+        >
+          <i class="fa-solid fa-rotate-right"></i>
+          <span id="btnRetryText">다시 시도하기</span>
+        </button>
+      </div>
+
+      <!-- Overlay: You Win 2048 Screen -->
+      <div id="gameWinOverlay" class="absolute inset-0 bg-amber-950/90 backdrop-blur-md rounded-2xl flex flex-col items-center justify-center text-center p-6 hidden z-20 border border-amber-500/40">
+        <div class="w-16 h-16 bg-amber-400 text-slate-950 rounded-full flex items-center justify-center text-3xl mb-3 shadow-lg animate-bounce">
+          <i class="fa-solid fa-trophy"></i>
+        </div>
+        <h2 class="text-3xl font-black text-white mb-1" id="gameWinTitle">축하합니다! 2048 달성!</h2>
+        <p class="text-xs sm:text-sm text-amber-200 mb-5" id="gameWinSub">관산중 최고의 브레인으로 인정합니다!</p>
+        <div class="flex gap-3">
+          <button 
+            onclick="keepPlaying()" 
+            class="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl border border-white/20 text-xs sm:text-sm transition-all"
+            id="btnKeepPlayingText"
+          >
+            계속 플레이
+          </button>
+          <button 
+            onclick="restartGame()" 
+            class="px-5 py-2.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold rounded-xl shadow-lg text-xs sm:text-sm transition-transform active:scale-95"
+            id="btnWinRestartText"
+          >
+            새 게임
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Onscreen D-Pad Controls for mobile / touch accessibility -->
+    <div class="w-full mt-4 p-3 bg-[#141820] rounded-2xl border border-slate-800 shadow-sm flex items-center justify-between">
+      <div class="text-[11px] text-slate-400 leading-tight">
+        <p class="font-semibold text-slate-200" id="tipControlsTitle">🎮 조작 안내</p>
+        <p id="tipControlsDesc">화면 스와이프 or 키보드 방향키 / WASD</p>
+      </div>
+
+      <div class="grid grid-cols-3 gap-1 w-28">
+        <div></div>
+        <button onclick="handleManualMove('UP')" class="bg-[#1f2633] active:bg-school-600 border border-slate-700/60 p-2 rounded-lg text-slate-200 active:text-white font-bold text-center text-xs transition-colors shadow-sm">
+          <i class="fa-solid fa-arrow-up"></i>
+        </button>
+        <div></div>
+        <button onclick="handleManualMove('LEFT')" class="bg-[#1f2633] active:bg-school-600 border border-slate-700/60 p-2 rounded-lg text-slate-200 active:text-white font-bold text-center text-xs transition-colors shadow-sm">
+          <i class="fa-solid fa-arrow-left"></i>
+        </button>
+        <button onclick="handleManualMove('DOWN')" class="bg-[#1f2633] active:bg-school-600 border border-slate-700/60 p-2 rounded-lg text-slate-200 active:text-white font-bold text-center text-xs transition-colors shadow-sm">
+          <i class="fa-solid fa-arrow-down"></i>
+        </button>
+        <button onclick="handleManualMove('RIGHT')" class="bg-[#1f2633] active:bg-school-600 border border-slate-700/60 p-2 rounded-lg text-slate-200 active:text-white font-bold text-center text-xs transition-colors shadow-sm">
+          <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ============================================== -->
+  <!-- 3. TUTORIAL MODAL (게임 방법 팝업)              -->
+  <!-- ============================================== -->
+  <div id="tutorialModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-[#141820] rounded-3xl max-w-lg w-full max-h-[90vh] flex flex-col shadow-2xl border border-slate-800 overflow-hidden transform transition-all">
+      <!-- Modal Header -->
+      <div class="px-6 py-4 bg-school-600 text-white flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-book-open text-xl text-school-100"></i>
+          <h3 class="font-extrabold text-base sm:text-lg" id="modalTutorialHeader">게임 방법 (How to Play)</h3>
+        </div>
+        <button onclick="closeTutorialModal()" class="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center text-sm transition-colors">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body (Bilingual Content) -->
+      <div class="p-6 overflow-y-auto space-y-4 text-xs sm:text-sm text-slate-300 custom-scroll">
+        <!-- Rule 1 -->
+        <div class="flex gap-3.5 items-start p-3 bg-[#1b222d] rounded-2xl border border-slate-800">
+          <div class="w-8 h-8 rounded-xl bg-school-600/30 text-school-400 flex items-center justify-center font-extrabold flex-shrink-0 text-sm">
+            1
+          </div>
+          <div>
+            <div class="font-bold text-white mb-0.5" id="tutTitle1">타일 이동 및 합치기</div>
+            <div class="text-slate-400 leading-relaxed" id="tutDesc1">
+              상, 하, 좌, 우로 타일을 밀면 모든 타일이 해당 방향 끝으로 이동합니다.
+            </div>
+          </div>
+        </div>
+
+        <!-- Rule 2 -->
+        <div class="flex gap-3.5 items-start p-3 bg-[#1b222d] rounded-2xl border border-slate-800">
+          <div class="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-extrabold flex-shrink-0 text-sm">
+            2
+          </div>
+          <div>
+            <div class="font-bold text-white mb-0.5" id="tutTitle2">숫자의 결합 규칙</div>
+            <div class="text-slate-400 leading-relaxed" id="tutDesc2">
+              같은 숫자가 적힌 두 타일이 부딪히면 하나로 합쳐지며 숫자가 두 배가 됩니다. (2+2=4, 4+4=8, ..., 1024+1024=2048)
+            </div>
+          </div>
+        </div>
+
+        <!-- Rule 3 -->
+        <div class="flex gap-3.5 items-start p-3 bg-[#1b222d] rounded-2xl border border-slate-800">
+          <div class="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-extrabold flex-shrink-0 text-sm">
+            3
+          </div>
+          <div>
+            <div class="font-bold text-white mb-0.5" id="tutTitle3">승리와 게임 오버 조건</div>
+            <div class="text-slate-400 leading-relaxed" id="tutDesc3">
+              '2048' 타일을 만들면 승리합니다! 그리드가 꽉 차서 더 이상 합칠 타일이 없으면 게임이 끝납니다.
+            </div>
+          </div>
+        </div>
+
+        <!-- Rule 4: Controls -->
+        <div class="flex gap-3.5 items-start p-3 bg-[#1b222d] rounded-2xl border border-slate-800">
+          <div class="w-8 h-8 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center font-extrabold flex-shrink-0 text-sm">
+            4
+          </div>
+          <div>
+            <div class="font-bold text-white mb-0.5" id="tutTitle4">기기별 조작법</div>
+            <div class="text-slate-400 leading-relaxed" id="tutDesc4">
+              • <strong>PC:</strong> 키보드 방향키 (↑, ↓, ←, →) 또는 W, A, S, D<br>
+              • <strong>스마트폰/태블릿:</strong> 화면을 원하는 방향으로 손가락 스와이프하거나 하단 방향 버튼 터치!
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="px-6 py-3.5 bg-[#10141b] border-t border-slate-800 flex justify-end">
+        <button 
+          onclick="closeTutorialModal()" 
+          class="px-5 py-2.5 bg-school-600 hover:bg-school-500 text-white font-bold rounded-xl text-xs sm:text-sm transition-all"
+          id="btnTutorialClose"
+        >
+          확인했습니다 (Got it)
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Notification Toast message container -->
+  <div id="toast" class="fixed bottom-4 px-4 py-2.5 bg-slate-800 text-white text-xs font-semibold rounded-xl shadow-xl transition-all duration-300 opacity-0 pointer-events-none transform translate-y-3 z-50 border border-slate-700"></div>
+
+  <!-- Footer Info -->
+  <footer class="w-full text-center text-xs text-slate-500 py-3 mt-4">
+    <p>© Gwansan Middle School. Designed for Student Brain Power.</p>
+  </footer>
+
+
+  <!-- ============================================== -->
+  <!-- JAVASCRIPT GAME LOGIC & MULTILINGUAL SYSTEM     -->
+  <!-- ============================================== -->
+  <script>
+    /* ---------------------------------------------
+       1. MULTILINGUAL DICTIONARY
+       Rules: Korean is the default. When a secondary
+       language is picked (EN/ZH/RU), text displays
+       bilingually (e.g., "한국어 / English").
+       --------------------------------------------- */
+    const translations = {
+      en: {
+        loginSub: "Enter Student ID & Name to start the brain puzzle!",
+        studentId: "Student ID",
+        studentName: "Name",
+        studentIdPlaceholder: "e.g., 20315 (Grade 2 Class 3 No.15)",
+        studentNamePlaceholder: "e.g., David Kim",
+        btnStart: "Start Game",
+        welcomeStudent: "Student",
+        changeStudent: "Change",
+        tagline: "Join the numbers and get to the 2048 tile!",
+        score: "Score",
+        best: "Best",
+        btnTutorial: "How to Play",
+        btnNewGame: "New Game",
+        gameOverTitle: "Game Over!",
+        gameOverSub: "No more moves available!",
+        finalScore: "Final Score",
+        btnRetry: "Try Again",
+        gameWinTitle: "Congratulations! You reached 2048!",
+        gameWinSub: "Recognized as Gwansan's Brain Master!",
+        btnKeepPlaying: "Keep Going",
+        tipTitle: "Controls Guide",
+        tipDesc: "Swipe screen or use Keyboard Arrow keys / WASD",
+        tutHeader: "How to Play (2048 Rules)",
+        tut1Title: "Move & Slide Tiles",
+        tut1Desc: "Swipe or press arrow keys to move all tiles towards that direction.",
+        tut2Title: "Merging Numbers",
+        tut2Desc: "When two tiles with the same number touch, they merge into one with double value! (2+2=4, 4+4=8...)",
+        tut3Title: "Win & Game Over",
+        tut3Desc: "Create the '2048' tile to win! The game ends if the board fills up and no moves remain.",
+        tut4Title: "Controls for All Devices",
+        tut4Desc: "• PC: Arrow keys (↑, ↓, ←, →) or W, A, S, D<br>• Mobile/Tablet: Swipe anywhere or tap the arrow buttons below!",
+        tutClose: "Got it",
+        loginReqNotice: "Please enter both student ID and name."
+      },
+      zh: {
+        loginSub: "输入学号和姓名，开启2048脑力挑战！",
+        studentId: "学号",
+        studentName: "姓名",
+        studentIdPlaceholder: "例如: 20315 (2年级3班15号)",
+        studentNamePlaceholder: "例如: 张三",
+        btnStart: "开始游戏",
+        welcomeStudent: "同学",
+        changeStudent: "更改",
+        tagline: "合并相同数字，挑战2048方块！",
+        score: "得分",
+        best: "最高分",
+        btnTutorial: "游戏玩法",
+        btnNewGame: "新游戏",
+        gameOverTitle: "游戏结束！",
+        gameOverSub: "无法再移动任何方块！",
+        finalScore: "最终得分",
+        btnRetry: "再试一次",
+        gameWinTitle: "恭喜！达成2048！",
+        gameWinSub: "认证为冠山中学最强大脑！",
+        btnKeepPlaying: "继续挑战",
+        tipTitle: "操作指南",
+        tipDesc: "滑动屏幕或使用键盘方向键 / WASD",
+        tutHeader: "游戏玩法 (2048规则说明)",
+        tut1Title: "方块滑动移动",
+        tut1Desc: "向上下左右滑动，所有方块将同时向该方向靠拢滑行。",
+        tut2Title: "数字合并规则",
+        tut2Desc: "两个相同数字的方块碰撞时会融合成翻倍的新方块 (2+2=4, 4+4=8... 1024+1024=2048)。",
+        tut3Title: "胜利与失败条件",
+        tut3Desc: "成功合成'2048'方块即获胜！如果棋盘填满且无法合并，游戏即告结束。",
+        tut4Title: "各设备操作方式",
+        tut4Desc: "• 电脑: 键盘方向键 (↑, ↓, ←, →) 或 WASD<br>• 手机/平板: 在屏幕上任意滑动，或点击下方方向按键！",
+        tutClose: "我知道了",
+        loginReqNotice: "请输入学号和姓名。"
+      },
+      ru: {
+        loginSub: "Введите номер и имя ученика, чтобы начать головоломку!",
+        studentId: "Номер ученика",
+        studentName: "Имя",
+        studentIdPlaceholder: "Например: 20315 (2 класс 3 гр. №15)",
+        studentNamePlaceholder: "Например: Иван Иванов",
+        btnStart: "Начать игру",
+        welcomeStudent: "Ученик",
+        changeStudent: "Сменить",
+        tagline: "Объединяйте числа и получите плитку 2048!",
+        score: "Счёт",
+        best: "Рекорд",
+        btnTutorial: "Как играть",
+        btnNewGame: "Новая игра",
+        gameOverTitle: "Игра окончена!",
+        gameOverSub: "Больше нет доступных ходов!",
+        finalScore: "Итоговый счёт",
+        btnRetry: "Попробовать снова",
+        gameWinTitle: "Поздравляем! Вы собрали 2048!",
+        gameWinSub: "Вы признаны умнейшим учеником школы Квансан!",
+        btnKeepPlaying: "Продолжить",
+        tipTitle: "Управление",
+        tipDesc: "Свайп по экрану или стрелки клавиатуры / WASD",
+        tutHeader: "Как играть (Правила игры 2048)",
+        tut1Title: "Движение плиток",
+        tut1Desc: "Сдвигайте плитки в любом из 4 направлений. Все плитки перемещаются до упора.",
+        tut2Title: "Слияние чисел",
+        tut2Desc: "При столкновении двух одинаковых плиток они объединяются в одну с удвоенным номиналом (2+2=4, 4+4=8...).",
+        tut3Title: "Победа и поражение",
+        tut3Desc: "Соберите плитку '2048' для победы! Если поле заполнится и ходов не останется, игра завершится.",
+        tut4Title: "Управление на устройствах",
+        tut4Desc: "• ПК: Стрелки клавиатуры (↑, ↓, ←, →) или WASD<br>• Телефон/планшет: Свайп пальцем или кнопки со стрелками внизу!",
+        tutClose: "Понятно",
+        loginReqNotice: "Пожалуйста, введите номер ученика и имя."
+      }
+    };
+
+    // State Management
+    let currentLang = 'ko'; // 'ko' | 'en' | 'zh' | 'ru'
+    let currentUser = null; // { id: string, name: string }
+
+    // 2048 Core Engine State
+    const GRID_SIZE = 4;
+    let board = [];
+    let score = 0;
+    let bestScore = 0;
+    let hasWon = false;
+    let keepPlayingAfterWin = false;
+    let isGameOver = false;
+
+    /* ---------------------------------------------
+       2. BILINGUAL RENDERING HELPER
+       Format: Korean on primary, with secondary language 
+       appended if non-Korean selected.
+       --------------------------------------------- */
+    function formatText(korean, key) {
+      if (currentLang === 'ko' || !translations[currentLang] || !translations[currentLang][key]) {
+        return korean;
+      }
+      return `${korean} <span class="text-[0.88em] opacity-80 font-normal">/ ${translations[currentLang][key]}</span>`;
+    }
+
+    function updateLanguageUI() {
+      // Highlight active language button
+      document.querySelectorAll('.lang-btn').forEach(btn => {
+        const lang = btn.getAttribute('data-lang');
+        if (lang === currentLang) {
+          btn.className = 'lang-btn px-2.5 py-1 text-xs font-bold rounded-xl bg-school-600 text-white shadow-sm transition-all';
+        } else {
+          btn.className = 'lang-btn px-2.5 py-1 text-xs font-bold rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-all';
+        }
+      });
+
+      // Update text in Login Screen
+      const t = translations[currentLang];
+      const isKo = currentLang === 'ko';
+
+      document.getElementById('loginSubTitle').innerHTML = isKo 
+        ? "학번과 이름을 입력하고 두뇌 퍼즐에 도전하세요!" 
+        : `학번과 이름을 입력하고 두뇌 퍼즐에 도전하세요!<br><span class="text-xs text-school-400 font-medium">${t.loginSub}</span>`;
+
+      document.getElementById('labelStudentId').innerHTML = formatText("학번", "studentId");
+      document.getElementById('labelStudentName').innerHTML = formatText("이름", "studentName");
+      document.getElementById('btnStartGameText').innerHTML = formatText("게임 시작", "btnStart");
+
+      // Update Header info if logged in
+      if (currentUser) {
+        renderStudentHeader();
+      }
+
+      // Update Game Screen labels
+      document.getElementById('textLogout').innerHTML = formatText("변경", "changeStudent");
+      document.getElementById('gameTagline').innerHTML = isKo 
+        ? "숫자를 합쳐 2048을 완성하세요!" 
+        : `숫자를 합쳐 2048을 완성하세요! <span class="block text-[10px] text-slate-400 font-normal">${t.tagline}</span>`;
+
+      document.getElementById('labelScore').innerHTML = formatText("점수", "score");
+      document.getElementById('labelBest').innerHTML = formatText("최고점수", "best");
+      document.getElementById('btnTutorialText').innerHTML = formatText("게임 방법", "btnTutorial");
+      document.getElementById('btnNewGameText').innerHTML = formatText("새 게임", "btnNewGame");
+
+      // Overlays
+      document.getElementById('gameOverTitle').innerHTML = formatText("게임 오버", "gameOverTitle");
+      document.getElementById('gameOverSub').innerHTML = formatText("더 이상 이동할 수 없습니다!", "gameOverSub");
+      document.getElementById('finalScoreLabel').innerHTML = formatText("최종 점수", "finalScore");
+      document.getElementById('btnRetryText').innerHTML = formatText("다시 시도하기", "btnRetry");
+
+      document.getElementById('gameWinTitle').innerHTML = formatText("축하합니다! 2048 달성!", "gameWinTitle");
+      document.getElementById('gameWinSub').innerHTML = formatText("관산중 최고의 브레인으로 인정합니다!", "gameWinSub");
+      document.getElementById('btnKeepPlayingText').innerHTML = formatText("계속 플레이", "btnKeepPlaying");
+      document.getElementById('btnWinRestartText').innerHTML = formatText("새 게임", "btnNewGame");
+
+      // Controls info
+      document.getElementById('tipControlsTitle').innerHTML = formatText("🎮 조작 안내", "tipTitle");
+      document.getElementById('tipControlsDesc').innerHTML = formatText("화면 스와이프 or 키보드 방향키 / WASD", "tipDesc");
+
+      // Tutorial Modal Elements
+      document.getElementById('modalTutorialHeader').innerHTML = formatText("게임 방법", "tutHeader");
+      document.getElementById('tutTitle1').innerHTML = formatText("1. 타일 이동 및 합치기", "tut1Title");
+      document.getElementById('tutDesc1').innerHTML = isKo 
+        ? "상, 하, 좌, 우로 타일을 밀면 모든 타일이 해당 방향 끝으로 이동합니다."
+        : `상, 하, 좌, 우로 타일을 밀면 모든 타일이 해당 방향 끝으로 이동합니다.<br><span class="text-xs text-slate-400 mt-1 block">${t.tut1Desc}</span>`;
+
+      document.getElementById('tutTitle2').innerHTML = formatText("2. 숫자의 결합 규칙", "tut2Title");
+      document.getElementById('tutDesc2').innerHTML = isKo
+        ? "같은 숫자가 적힌 두 타일이 부딪히면 하나로 합쳐지며 숫자가 두 배가 됩니다. (2+2=4, 4+4=8, ..., 1024+1024=2048)"
+        : `같은 숫자가 적힌 두 타일이 부딪히면 하나로 합쳐지며 숫자가 두 배가 됩니다.<br><span class="text-xs text-slate-400 mt-1 block">${t.tut2Desc}</span>`;
+
+      document.getElementById('tutTitle3').innerHTML = formatText("3. 승리와 게임 오버 조건", "tut3Title");
+      document.getElementById('tutDesc3').innerHTML = isKo
+        ? "'2048' 타일을 만들면 승리합니다! 그리드가 꽉 차서 더 이상 합칠 타일이 없으면 게임이 끝납니다."
+        : `'2048' 타일을 만들면 승리합니다! 그리드가 꽉 차면 종료됩니다.<br><span class="text-xs text-slate-400 mt-1 block">${t.tut3Desc}</span>`;
+
+      document.getElementById('tutTitle4').innerHTML = formatText("4. 기기별 조작법", "tut4Title");
+      document.getElementById('tutDesc4').innerHTML = isKo
+        ? "• <strong>PC:</strong> 방향키 (↑, ↓, ←, →) 또는 W, A, S, D<br>• <strong>스마트폰/태블릿:</strong> 화면 스와이프 또는 하단 방향 버튼 터치!"
+        : `• <strong>PC:</strong> 방향키 (↑, ↓, ←, →) / WASD<br>• <strong>스마트폰/태블릿:</strong> 화면 스와이프 or 버튼 터치<div class="text-xs text-slate-400 mt-1">${t.tut4Desc}</div>`;
+
+      document.getElementById('btnTutorialClose').innerHTML = formatText("확인했습니다", "tutClose");
+    }
+
+    function setLanguage(lang) {
+      currentLang = lang;
+      localStorage.setItem('gwansan_2048_lang', lang);
+      updateLanguageUI();
+    }
+
+    /* ---------------------------------------------
+       3. USER AUTH & GATEWAY LOGIC
+       --------------------------------------------- */
+    function handleLogin(event) {
+      if (event) event.preventDefault();
+      const idInput = document.getElementById('studentIdInput');
+      const nameInput = document.getElementById('studentNameInput');
+      const feedback = document.getElementById('loginFeedback');
+
+      const id = idInput.value.trim();
+      const name = nameInput.value.trim();
+
+      if (!id || !name) {
+        feedback.innerText = currentLang === 'ko' 
+          ? "학번과 이름을 모두 입력해주세요." 
+          : translations[currentLang].loginReqNotice;
+        feedback.classList.remove('hidden');
+        return;
+      }
+
+      feedback.classList.add('hidden');
+      currentUser = { id, name };
+      localStorage.setItem('gwansan_2048_user', JSON.stringify(currentUser));
+
+      renderStudentHeader();
+      switchToGameView();
+    }
+
+    function renderStudentHeader() {
+      if (!currentUser) return;
+      const studentLabel = currentLang === 'ko' ? "학생" : `학생 / ${translations[currentLang].welcomeStudent}`;
+      document.getElementById('headerStudentInfo').innerHTML = 
+        `<span class="text-school-600">${currentUser.id}</span> ${currentUser.name} <span class="text-slate-400 font-normal text-xs">(${studentLabel})</span>`;
+    }
+
+    function handleLogout() {
+      currentUser = null;
+      localStorage.removeItem('gwansan_2048_user');
+      document.getElementById('studentIdInput').value = '';
+      document.getElementById('studentNameInput').value = '';
+      document.getElementById('loginScreen').classList.remove('hidden');
+      document.getElementById('gameScreen').classList.add('hidden');
+    }
+
+    function switchToGameView() {
+      document.getElementById('loginScreen').classList.add('hidden');
+      document.getElementById('gameScreen').classList.remove('hidden');
+      initGame();
+    }
+
+    /* ---------------------------------------------
+       4. 2048 PUZZLE CORE ENGINE
+       --------------------------------------------- */
+    function initGame() {
+      // Load best score from local storage
+      const savedBest = localStorage.getItem('gwansan_2048_bestScore');
+      bestScore = savedBest ? parseInt(savedBest, 10) : 0;
+      document.getElementById('bestScore').innerText = bestScore;
+
+      restartGame();
+    }
+
+    function restartGame() {
+      board = [
+        [0, 0, 0, 0],
+        [0, 0, 0, 0],
+        [0, 0, 0, 0],
+        [0, 0, 0, 0]
+      ];
+      score = 0;
+      hasWon = false;
+      keepPlayingAfterWin = false;
+      isGameOver = false;
+
+      updateScore(0, true);
+      document.getElementById('gameOverOverlay').classList.add('hidden');
+      document.getElementById('gameWinOverlay').classList.add('hidden');
+
+      // Spawn two initial tiles
+      spawnTile();
+      spawnTile();
+      renderBoard();
+    }
+
+    function spawnTile() {
+      const emptyCells = [];
+      for (let r = 0; r < GRID_SIZE; r++) {
+        for (let c = 0; c < GRID_SIZE; c++) {
+          if (board[r][c] === 0) {
+            emptyCells.push({ r, c });
+          }
+        }
+      }
+
+      if (emptyCells.length === 0) return false;
+
+      const randomCell = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+      // 90% chance of 2, 10% chance of 4
+      const value = Math.random() < 0.9 ? 2 : 4;
+      board[randomCell.r][randomCell.c] = {
+        value: value,
+        isNew: true,
+        merged: false
+      };
+      return true;
+    }
+
+    function renderBoard() {
+      const container = document.getElementById('tileContainer');
+      container.innerHTML = '';
+
+      for (let r = 0; r < GRID_SIZE; r++) {
+        for (let c = 0; c < GRID_SIZE; c++) {
+          const item = board[r][c];
+          if (item && item.value > 0) {
+            const val = item.value;
+            const tileEl = document.createElement('div');
+
+            // Determine styling class based on value
+            let colorClass = `tile-${val}`;
+            if (val > 2048) colorClass = 'tile-super';
+
+            // Animation classes
+            let animClass = '';
+            if (item.isNew) animClass = 'tile-new';
+            else if (item.merged) animClass = 'tile-merged';
+
+            // Reset animation markers
+            item.isNew = false;
+            item.merged = false;
+
+            // Responsive typography sizing based on number of digits
+            let fontSizeClass = 'text-2xl sm:text-3xl font-extrabold';
+            if (val >= 1024) fontSizeClass = 'text-xl sm:text-2xl font-black';
+            else if (val >= 128) fontSizeClass = 'text-2xl sm:text-3xl font-extrabold';
+
+            tileEl.className = `w-full h-full rounded-xl flex items-center justify-center font-number select-none shadow-md ${colorClass} ${animClass} ${fontSizeClass}`;
+            tileEl.style.gridRowStart = r + 1;
+            tileEl.style.gridColumnStart = c + 1;
+            tileEl.innerText = val;
+
+            container.appendChild(tileEl);
+          }
+        }
+      }
+    }
+
+    function updateScore(addPoints, reset = false) {
+      if (reset) {
+        score = 0;
+      } else {
+        score += addPoints;
+        if (addPoints > 0) {
+          showScoreAddition(addPoints);
+        }
+      }
+
+      document.getElementById('currentScore').innerText = score;
+
+      if (score > bestScore) {
+        bestScore = score;
+        document.getElementById('bestScore').innerText = bestScore;
+        localStorage.setItem('gwansan_2048_bestScore', bestScore.toString());
+      }
+    }
+
+    function showScoreAddition(points) {
+      const container = document.getElementById('scoreAdditionContainer');
+      const addEl = document.createElement('span');
+      addEl.className = 'score-addition';
+      addEl.innerText = `+${points}`;
+      container.appendChild(addEl);
+      setTimeout(() => {
+        if (addEl.parentElement) {
+          addEl.parentElement.removeChild(addEl);
+        }
+      }, 750);
+    }
+
+    /* ---------------------------------------------
+       5. BOARD MOVEMENT & LOGIC
+       --------------------------------------------- */
+    function filterRow(row) {
+      return row.filter(cell => cell && cell.value > 0);
+    }
+
+    function slideAndMergeRow(row) {
+      let filtered = filterRow(row);
+      let newRow = [];
+      let pointsEarned = 0;
+
+      for (let i = 0; i < filtered.length; i++) {
+        if (i < filtered.length - 1 && filtered[i].value === filtered[i + 1].value) {
+          const mergedVal = filtered[i].value * 2;
+          newRow.push({ value: mergedVal, merged: true, isNew: false });
+          pointsEarned += mergedVal;
+          if (mergedVal === 2048 && !hasWon) {
+            hasWon = true;
+          }
+          i++; // Skip merged partner
+        } else {
+          newRow.push({ value: filtered[i].value, merged: false, isNew: false });
+        }
+      }
+
+      while (newRow.length < GRID_SIZE) {
+        newRow.push(0);
+      }
+
+      return { newRow, pointsEarned };
+    }
+
+    function moveLeft() {
+      let moved = false;
+      let totalEarned = 0;
+
+      for (let r = 0; r < GRID_SIZE; r++) {
+        const originalRow = board[r];
+        const { newRow, pointsEarned } = slideAndMergeRow(originalRow);
+
+        for (let c = 0; c < GRID_SIZE; c++) {
+          const oldVal = originalRow[c] ? originalRow[c].value : 0;
+          const newVal = newRow[c] ? newRow[c].value : 0;
+          if (oldVal !== newVal) {
+            moved = true;
+          }
+        }
+
+        board[r] = newRow;
+        totalEarned += pointsEarned;
+      }
+
+      return { moved, totalEarned };
+    }
+
+    function rotateBoardClockwise() {
+      const newBoard = [
+        [0, 0, 0, 0],
+        [0, 0, 0, 0],
+        [0, 0, 0, 0],
+        [0, 0, 0, 0]
+      ];
+      for (let r = 0; r < GRID_SIZE; r++) {
+        for (let c = 0; c < GRID_SIZE; c++) {
+          newBoard[c][GRID_SIZE - 1 - r] = board[r][c];
+        }
+      }
+      board = newBoard;
+    }
+
+    function rotateBoardCounterClockwise() {
+      const newBoard = [
+        [0, 0, 0, 0],
+        [0, 0, 0, 0],
+        [0, 0, 0, 0],
+        [0, 0, 0, 0]
+      ];
+      for (let r = 0; r < GRID_SIZE; r++) {
+        for (let c = 0; c < GRID_SIZE; c++) {
+          newBoard[GRID_SIZE - 1 - c][r] = board[r][c];
+        }
+      }
+      board = newBoard;
+    }
+
+    function executeMove(direction) {
+      if (isGameOver) return;
+
+      let result = { moved: false, totalEarned: 0 };
+
+      if (direction === 'LEFT') {
+        result = moveLeft();
+      } else if (direction === 'RIGHT') {
+        // Rotate 180 -> moveLeft -> Rotate 180
+        rotateBoardClockwise();
+        rotateBoardClockwise();
+        result = moveLeft();
+        rotateBoardClockwise();
+        rotateBoardClockwise();
+      } else if (direction === 'UP') {
+        // Rotate counter-clockwise -> moveLeft -> Rotate clockwise
+        rotateBoardCounterClockwise();
+        result = moveLeft();
+        rotateBoardClockwise();
+      } else if (direction === 'DOWN') {
+        // Rotate clockwise -> moveLeft -> Rotate counter-clockwise
+        rotateBoardClockwise();
+        result = moveLeft();
+        rotateBoardCounterClockwise();
+      }
+
+      if (result.moved) {
+        updateScore(result.totalEarned);
+        spawnTile();
+        renderBoard();
+
+        // Check Win Condition
+        if (hasWon && !keepPlayingAfterWin) {
+          triggerWin();
+          return;
+        }
+
+        // Check Game Over Condition
+        if (checkGameOver()) {
+          triggerGameOver();
+        }
+      }
+    }
+
+    function checkGameOver() {
+      // Check for empty cells
+      for (let r = 0; r < GRID_SIZE; r++) {
+        for (let c = 0; c < GRID_SIZE; c++) {
+          if (!board[r][c] || board[r][c] === 0 || board[r][c].value === 0) {
+            return false;
+          }
+        }
+      }
+
+      // Check if adjacent tiles can merge
+      for (let r = 0; r < GRID_SIZE; r++) {
+        for (let c = 0; c < GRID_SIZE; c++) {
+          const val = board[r][c].value;
+          // check right
+          if (c < GRID_SIZE - 1 && board[r][c + 1] && board[r][c + 1].value === val) {
+            return false;
+          }
+          // check down
+          if (r < GRID_SIZE - 1 && board[r + 1][c] && board[r + 1][c].value === val) {
+            return false;
+          }
+        }
+      }
+
+      return true;
+    }
+
+    function triggerGameOver() {
+      isGameOver = true;
+      document.getElementById('finalScoreVal').innerText = score;
+      document.getElementById('gameOverOverlay').classList.remove('hidden');
+    }
+
+    function triggerWin() {
+      document.getElementById('gameWinOverlay').classList.remove('hidden');
+    }
+
+    function keepPlaying() {
+      keepPlayingAfterWin = true;
+      document.getElementById('gameWinOverlay').classList.add('hidden');
+    }
+
+    /* ---------------------------------------------
+       6. INPUT CONTROLS: KEYBOARD, TOUCH SWIPE & MANUAL
+       --------------------------------------------- */
+    function handleManualMove(dir) {
+      executeMove(dir);
+    }
+
+    // Keyboard controls
+    window.addEventListener('keydown', (e) => {
+      // Don't intercept if user is typing in login inputs
+      if (['studentIdInput', 'studentNameInput'].includes(document.activeElement.id)) {
+        return;
+      }
+
+      switch (e.key) {
+        case 'ArrowUp':
+        case 'w':
+        case 'W':
+          e.preventDefault();
+          executeMove('UP');
+          break;
+        case 'ArrowDown':
+        case 's':
+        case 'S':
+          e.preventDefault();
+          executeMove('DOWN');
+          break;
+        case 'ArrowLeft':
+        case 'a':
+        case 'A':
+          e.preventDefault();
+          executeMove('LEFT');
+          break;
+        case 'ArrowRight':
+        case 'd':
+        case 'D':
+          e.preventDefault();
+          executeMove('RIGHT');
+          break;
+      }
+    });
+
+    // Touch Swipe Detection
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchEndX = 0;
+    let touchEndY = 0;
+    const MIN_SWIPE_DISTANCE = 35; // minimum pixels to count as deliberate swipe
+
+    const gameArea = document.getElementById('gameScreen');
+
+    gameArea.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 1) {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+      }
+    }, { passive: true });
+
+    gameArea.addEventListener('touchend', (e) => {
+      if (e.changedTouches.length === 1) {
+        touchEndX = e.changedTouches[0].clientX;
+        touchEndY = e.changedTouches[0].clientY;
+        handleSwipeGesture();
+      }
+    }, { passive: true });
+
+    function handleSwipeGesture() {
+      const deltaX = touchEndX - touchStartX;
+      const deltaY = touchEndY - touchStartY;
+      const absX = Math.abs(deltaX);
+      const absY = Math.abs(deltaY);
+
+      if (Math.max(absX, absY) < MIN_SWIPE_DISTANCE) {
+        return; // Click or subtle wiggle, ignore
+      }
+
+      if (absX > absY) {
+        // Horizontal Move
+        if (deltaX > 0) {
+          executeMove('RIGHT');
+        } else {
+          executeMove('LEFT');
+        }
+      } else {
+        // Vertical Move
+        if (deltaY > 0) {
+          executeMove('DOWN');
+        } else {
+          executeMove('UP');
+        }
+      }
+    }
+
+    /* ---------------------------------------------
+       7. TUTORIAL MODAL HANDLERS
+       --------------------------------------------- */
+    function openTutorialModal() {
+      document.getElementById('tutorialModal').classList.remove('hidden');
+    }
+
+    function closeTutorialModal() {
+      document.getElementById('tutorialModal').classList.add('hidden');
+    }
+
+    // Close tutorial when clicking backdrop
+    document.getElementById('tutorialModal').addEventListener('click', (e) => {
+      if (e.target.id === 'tutorialModal') {
+        closeTutorialModal();
+      }
+    });
+
+    /* ---------------------------------------------
+       8. INITIALIZATION ON LOAD
+       --------------------------------------------- */
+    window.onload = function() {
+      // Check stored language preference
+      const savedLang = localStorage.getItem('gwansan_2048_lang');
+      if (savedLang && ['ko', 'en', 'zh', 'ru'].includes(savedLang)) {
+        currentLang = savedLang;
+      }
+      updateLanguageUI();
+
+      // Check stored student session
+      const savedUserStr = localStorage.getItem('gwansan_2048_user');
+      if (savedUserStr) {
+        try {
+          const user = JSON.parse(savedUserStr);
+          if (user && user.id && user.name) {
+            currentUser = user;
+            renderStudentHeader();
+            switchToGameView();
+            return;
+          }
+        } catch (e) {
+          localStorage.removeItem('gwansan_2048_user');
+        }
+      }
+
+      // Otherwise remain on Login Screen
+      document.getElementById('studentIdInput').focus();
+    };
+  </script>
+</body>
+</html>
