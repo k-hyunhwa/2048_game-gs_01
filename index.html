@@ -16,13 +16,11 @@
       -webkit-user-select: none;
     }
     
-    /* 모바일 스크롤락 및 터치 최적화 */
     html, body {
       overscroll-behavior-y: contain;
       background-color: #0b0d11;
     }
 
-    /* 커스텀 스크롤바 */
     ::-webkit-scrollbar {
       width: 6px;
       height: 6px;
@@ -38,28 +36,18 @@
       background: #4a5568;
     }
 
-    /* 타일 기본 애니메이션 */
     .tile {
       transition: transform 0.1s ease-in-out;
     }
     .tile-new {
       animation: appear 0.2s ease-in-out;
     }
-    .tile-merged {
-      animation: pop 0.2s ease-in-out;
-    }
 
     @keyframes appear {
       0% { opacity: 0; transform: scale(0); }
       100% { opacity: 1; transform: scale(1); }
     }
-    @keyframes pop {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.15); }
-      100% { transform: scale(1); }
-    }
 
-    /* 반응형 보드 크기 */
     .board-grid {
       width: min(88vw, 440px);
       height: min(88vw, 440px);
@@ -68,7 +56,7 @@
 </head>
 <body class="text-slate-100 min-h-screen flex flex-col justify-between overflow-x-hidden">
 
-  <!-- ================= [1] 로그인 모달 (초기 진입 화면) ================= -->
+  <!-- ================= [1] 로그인 모달 ================= -->
   <div id="loginModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4">
     <div class="bg-[#141820] border border-slate-700/80 rounded-2xl w-full max-w-md p-6 sm:p-8 shadow-2xl relative text-center">
       <div class="w-16 h-16 bg-gradient-to-tr from-amber-500 to-orange-400 rounded-2xl mx-auto flex items-center justify-center text-3xl font-black text-slate-950 shadow-lg shadow-amber-500/20 mb-4">
@@ -114,7 +102,6 @@
   <!-- ================= [2] 상단 네비게이션 헤더 ================= -->
   <header class="w-full bg-[#141820]/90 border-b border-slate-800 backdrop-blur sticky top-0 z-30 px-3 sm:px-6 py-2.5">
     <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
-      <!-- 로고 및 학생 정보 배지 -->
       <div class="flex items-center space-x-2.5">
         <div class="w-8 h-8 rounded-lg bg-amber-500 text-slate-950 font-black flex items-center justify-center text-sm shadow">
           2048
@@ -131,7 +118,6 @@
         </div>
       </div>
 
-      <!-- 다국어 선택기 (KO, EN, ZH, RU 상시 노출) -->
       <div class="flex items-center bg-[#1c2230] p-1 rounded-xl border border-slate-700/80 text-xs">
         <button onclick="setLanguage('ko')" class="lang-btn px-2.5 py-1 rounded-lg font-bold transition text-slate-400 hover:text-white" data-lang="ko">한국어</button>
         <button onclick="setLanguage('en')" class="lang-btn px-2.5 py-1 rounded-lg font-bold transition text-slate-400 hover:text-white" data-lang="en">EN</button>
@@ -139,14 +125,12 @@
         <button onclick="setLanguage('ru')" class="lang-btn px-2.5 py-1 rounded-lg font-bold transition text-slate-400 hover:text-white" data-lang="ru">РУС</button>
       </div>
 
-      <!-- 상단 도구 (튜토리얼 & 모바일 랭킹 토글) -->
       <div class="flex items-center space-x-2">
         <button onclick="toggleTutorial(true)" class="bg-[#1c2230] hover:bg-slate-700 border border-slate-700 text-slate-200 px-2.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition">
           <i class="fa-regular fa-circle-question text-amber-400"></i>
           <span class="bilingual-text" data-key="tutorialBtn">게임 방법</span>
         </button>
         
-        <!-- 모바일/작은 화면 랭킹 열기 버튼 -->
         <button onclick="toggleRankDrawer(true)" class="xl:hidden bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-2.5 py-1.5 rounded-xl text-xs flex items-center gap-1.5 shadow-md shadow-amber-500/20 transition">
           <i class="fa-solid fa-trophy"></i>
           <span class="bilingual-text" data-key="rankingBtn">순위표</span>
@@ -158,10 +142,8 @@
   <!-- ================= [3] 메인 컨텐츠 영역 ================= -->
   <main class="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 flex flex-col xl:flex-row items-center xl:items-start justify-center gap-6">
     
-    <!-- 좌측/중앙: 게임 메인 보드 컨테이너 -->
     <div class="flex flex-col items-center w-full max-w-md">
       
-      <!-- 점수 대시보드 & 재시작 버튼 -->
       <div class="w-full flex items-center justify-between gap-3 mb-4">
         <div>
           <h2 class="text-2xl font-black tracking-tight text-white flex items-center gap-1.5">
@@ -171,30 +153,23 @@
         </div>
 
         <div class="flex items-center gap-2">
-          <!-- 현재 점수 -->
           <div class="bg-[#141820] border border-slate-800 px-3 py-1.5 rounded-xl text-center min-w-[72px]">
             <div class="text-[10px] text-slate-400 font-bold tracking-wider bilingual-text" data-key="scoreLabel">점수</div>
             <div id="currentScore" class="text-base sm:text-lg font-black text-amber-400">0</div>
           </div>
-          <!-- 최고 점수 -->
           <div class="bg-[#141820] border border-slate-800 px-3 py-1.5 rounded-xl text-center min-w-[72px]">
             <div class="text-[10px] text-slate-400 font-bold tracking-wider bilingual-text" data-key="bestLabel">내 최고</div>
             <div id="bestScore" class="text-base sm:text-lg font-black text-slate-200">0</div>
           </div>
-          <!-- 다시하기 -->
           <button onclick="initGame()" class="w-10 h-10 rounded-xl bg-[#1c2230] hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition" title="새 게임">
             <i class="fa-solid fa-rotate-right text-sm"></i>
           </button>
         </div>
       </div>
 
-      <!-- 게임 보드 -->
       <div class="relative bg-[#141820] p-3 rounded-2xl border border-slate-800 shadow-2xl">
-        <div id="gridContainer" class="board-grid grid grid-cols-4 grid-rows-4 gap-2.5 sm:gap-3 bg-[#0d1017] p-2.5 sm:p-3 rounded-xl relative">
-          <!-- 16개 배경 슬롯 (JS 자동 초기화) -->
-        </div>
+        <div id="gridContainer" class="board-grid grid grid-cols-4 grid-rows-4 gap-2.5 sm:gap-3 bg-[#0d1017] p-2.5 sm:p-3 rounded-xl relative"></div>
 
-        <!-- 게임 오버 오버레이 -->
         <div id="gameOverOverlay" class="absolute inset-0 bg-black/85 backdrop-blur-sm rounded-2xl flex-col items-center justify-center gap-4 hidden z-20">
           <div class="w-14 h-14 rounded-full bg-red-500/20 text-red-400 border border-red-500/30 flex items-center justify-center text-2xl">
             <i class="fa-solid fa-gamepad"></i>
@@ -209,7 +184,6 @@
         </div>
       </div>
 
-      <!-- 모바일용 가상 방향키 컨트롤러 (터치 편의) -->
       <div class="grid grid-cols-3 gap-2 mt-4 sm:hidden w-44">
         <div></div>
         <button onclick="move(0)" class="h-11 bg-[#1a202c] active:bg-amber-500 active:text-slate-950 border border-slate-700 rounded-xl flex items-center justify-center text-slate-300 text-lg shadow"><i class="fa-solid fa-chevron-up"></i></button>
@@ -224,11 +198,9 @@
       </p>
     </div>
 
-    <!-- ================= [4] 우측: 실시간 랭킹 순위표 (상위 50위) ================= -->
-    <!-- PC/대형 화면: 고정 패널 / 모바일/태블릿: 슬라이드 드로어 구조 -->
+    <!-- ================= [4] 우측: 실시간 랭킹 순위표 ================= -->
     <div id="rankingDrawer" class="fixed xl:static top-0 right-0 bottom-0 z-40 w-80 sm:w-96 xl:w-84 max-w-[90vw] bg-[#12161f] xl:bg-[#141820] border-l xl:border border-slate-800 xl:rounded-2xl flex flex-col shadow-2xl xl:shadow-lg transition-transform duration-300 translate-x-full xl:translate-x-0 h-full xl:h-[580px]">
       
-      <!-- 랭킹 헤더 -->
       <div class="p-3.5 border-b border-slate-800 flex items-center justify-between bg-[#161b26] xl:rounded-t-2xl">
         <div class="flex items-center gap-2">
           <div class="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center text-xs">
@@ -250,31 +222,26 @@
           <button onclick="fetchLeaderboard()" class="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center text-xs transition" title="새로고침">
             <i id="syncIcon" class="fa-solid fa-arrows-rotate"></i>
           </button>
-          <!-- 모바일 닫기 버튼 -->
           <button onclick="toggleRankDrawer(false)" class="xl:hidden w-7 h-7 rounded-lg bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center text-xs">
             <i class="fa-solid fa-xmark"></i>
           </button>
         </div>
       </div>
 
-      <!-- 랭킹 목록 스크롤 뷰 -->
       <div id="rankingListContainer" class="flex-1 overflow-y-auto p-2.5 space-y-1.5 divide-y divide-slate-800/40">
-        <!-- 순위 항목이 JS로 렌더링됩니다 -->
         <div class="py-12 text-center text-slate-500 text-xs">
           <i class="fa-solid fa-circle-notch fa-spin text-lg text-amber-400 mb-2"></i>
           <p>순위를 불러오는 중입니다...</p>
         </div>
       </div>
 
-      <!-- 하단 상태 바 -->
       <div class="p-2.5 bg-[#0d1017] border-t border-slate-800 text-[11px] text-slate-400 flex items-center justify-between xl:rounded-b-2xl">
-        <span id="rankLastUpdated" class="text-[10px] text-slate-500">방금 업데이트됨</span>
-        <span class="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-md font-mono">GAS 연동됨</span>
+        <span id="rankLastUpdated" class="text-[10px] text-slate-500">연결 대기 중</span>
+        <span id="connStatus" class="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-md font-mono">GAS 연결됨</span>
       </div>
     </div>
   </main>
 
-  <!-- 랭킹 모바일 배경 딤 레이어 -->
   <div id="rankingBackdrop" onclick="toggleRankDrawer(false)" class="fixed inset-0 bg-black/60 backdrop-blur-xs z-30 hidden xl:hidden"></div>
 
   <!-- ================= [5] 튜토리얼 모달 ================= -->
@@ -291,28 +258,25 @@
       </div>
 
       <div class="overflow-y-auto space-y-4 py-4 text-xs sm:text-sm text-slate-300 pr-1">
-        <!-- 규칙 1 -->
         <div class="bg-[#1c2230] p-3.5 rounded-xl border border-slate-800 flex items-start gap-3">
           <div class="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 font-bold flex items-center justify-center shrink-0">1</div>
           <div>
             <h4 class="font-bold text-white mb-0.5 bilingual-text" data-key="rule1Title">타일 결합하기</h4>
-            <p class="text-slate-400 text-xs bilingual-text" data-key="rule1Desc">방향키로 타일을 밀어 움직입니다. 같은 숫자가 적힌 두 타일이 충돌하면 하나로 합쳐지며 숫자가 두 배가 됩니다. (2+2=4, 4+4=8...)</p>
+            <p class="text-slate-400 text-xs bilingual-text" data-key="rule1Desc">방향키로 타일을 밀어 움직입니다. 같은 숫자가 적힌 두 타일이 충돌하면 하나로 합쳐지며 숫자가 두 배가 됩니다.</p>
           </div>
         </div>
-        <!-- 규칙 2 -->
         <div class="bg-[#1c2230] p-3.5 rounded-xl border border-slate-800 flex items-start gap-3">
           <div class="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 font-bold flex items-center justify-center shrink-0">2</div>
           <div>
             <h4 class="font-bold text-white mb-0.5 bilingual-text" data-key="rule2Title">최종 목표 2048</h4>
-            <p class="text-slate-400 text-xs bilingual-text" data-key="rule2Desc">타일을 지속적으로 합성하여 궁극의 숫자 2048 타일을 만드는 것이 목표입니다. 2048을 넘어서도 계속해서 최고 점수를 갱신할 수 있습니다!</p>
+            <p class="text-slate-400 text-xs bilingual-text" data-key="rule2Desc">타일을 계속 합쳐 2048을 완성하세요! 이후에도 최고점수를 계속 도전할 수 있습니다.</p>
           </div>
         </div>
-        <!-- 규칙 3 -->
         <div class="bg-[#1c2230] p-3.5 rounded-xl border border-slate-800 flex items-start gap-3">
           <div class="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 font-bold flex items-center justify-center shrink-0">3</div>
           <div>
             <h4 class="font-bold text-white mb-0.5 bilingual-text" data-key="rule3Title">기기별 조작법</h4>
-            <p class="text-slate-400 text-xs bilingual-text" data-key="rule3Desc">PC: 키보드 방향키 또는 W/A/S/D 키<br>스마트폰/태블릿: 화면 터치 스와이프 제스처 또는 하단 화살표 버튼</p>
+            <p class="text-slate-400 text-xs bilingual-text" data-key="rule3Desc">PC: 키보드 방향키 또는 W/A/S/D | 스마트폰/태블릿: 화면 터치 스와이프 제스처 또는 하단 화살표 버튼</p>
           </div>
         </div>
       </div>
@@ -327,11 +291,8 @@
     관산중학교 (Gwansan Middle School) • 2048 Challenge with Google Sheets Leaderboard
   </footer>
 
-  <!-- ================= [6] 스크립트 로직 ================= -->
+  <!-- ================= [6] 스크립트 ================= -->
   <script>
-    /* -------------------------------------------------------------
-       1. 다국어 사전 (한국어 기본 + 병기 언어 EN, ZH, RU)
-    ------------------------------------------------------------- */
     const I18N = {
       subtitle: {
         ko: "타일을 합쳐 2048을 완성하세요!",
@@ -390,7 +351,6 @@
         }
       });
 
-      // 텍스트 다국어 병기 갱신 (한국어 기본 + 선택 언어 병기)
       document.querySelectorAll('.bilingual-text').forEach(el => {
         const key = el.dataset.key;
         if (I18N[key]) {
@@ -405,9 +365,6 @@
       });
     }
 
-    /* -------------------------------------------------------------
-       2. 학생 정보 관리 (학번, 이름)
-    ------------------------------------------------------------- */
     let currentUser = {
       studentId: localStorage.getItem('gwansan_2048_id') || '',
       name: localStorage.getItem('gwansan_2048_name') || ''
@@ -441,49 +398,55 @@
 
       updateStudentBadge();
       document.getElementById('loginModal').classList.add('hidden');
-      
-      // 사용자 변경 시 해당 학생의 최고 점수 동기화
       loadUserPersonalBest();
     });
 
     /* -------------------------------------------------------------
-       3. 구글 스프레드시트 (GAS) 실시간 랭킹 연동
+       구글 앱스 스크립트 실시간 연동 (JSONP & CORS 프리 로더)
     ------------------------------------------------------------- */
-    // 사용자가 제공한 배포 웹앱 URL
     const GAS_URL = "https://script.google.com/macros/s/AKfycbwQQSGIw-DxNzm2LpeQbvEVl8szFvcZbDqgucBUVA6aAEDkfUkcT3GqWX3D75fdtWYAEQ/exec";
 
-    // 캐시된 랭킹 데이터
-    let cachedLeaderboard = [];
+    // JSONP 글로벌 콜백 핸들러
+    window.onLeaderboardLoaded = function(result) {
+      const icon = document.getElementById('syncIcon');
+      if (icon) icon.classList.remove('fa-spin');
 
-    async function fetchLeaderboard() {
+      if (result && Array.isArray(result.data)) {
+        renderLeaderboard(result.data);
+        document.getElementById('rankLastUpdated').textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + " 갱신됨";
+      }
+    };
+
+    function fetchLeaderboard() {
       const icon = document.getElementById('syncIcon');
       if (icon) icon.classList.add('fa-spin');
+
+      // 기존 jsonp 스크립트 태그 정리
+      const existingScript = document.getElementById('gas-jsonp-script');
+      if (existingScript) existingScript.remove();
+
+      // JSONP 방식을 통해 브라우저 도메인 제약(CORS)을 완전 우회
+      const script = document.createElement('script');
+      script.id = 'gas-jsonp-script';
+      script.src = `${GAS_URL}?callback=onLeaderboardLoaded&t=${Date.now()}`;
       
-      try {
-        const response = await fetch(GAS_URL + "?t=" + Date.now(), {
-          method: 'GET',
-          cache: 'no-store'
-        });
-        
-        if (!response.ok) throw new Error('Network error');
-        const result = await response.json();
-        
-        if (result && Array.isArray(result.data)) {
-          cachedLeaderboard = result.data;
-          renderLeaderboard(cachedLeaderboard);
-          document.getElementById('rankLastUpdated').textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + " 갱신됨";
-        }
-      } catch (err) {
-        console.warn("GAS 랭킹 수신 실패 (오프라인 모드 유지):", err);
-        if (cachedLeaderboard.length === 0) {
-          renderFallbackLeaderboard();
-        }
-      } finally {
-        if (icon) icon.classList.remove('fa-spin');
-      }
+      script.onerror = function() {
+        console.warn("JSONP 요청 실패, 표준 fetch 재시도...");
+        // Fallback: 일반 fetch 시도
+        fetch(GAS_URL + "?t=" + Date.now())
+          .then(res => res.json())
+          .then(data => {
+            if (data && data.data) window.onLeaderboardLoaded(data);
+          })
+          .catch(err => {
+            console.error("순위 데이터 로드 불가:", err);
+            if (icon) icon.classList.remove('fa-spin');
+          });
+      };
+
+      document.body.appendChild(script);
     }
 
-    // 새 점수 제출 (Google Apps Script)
     function submitScoreToGAS(studentId, name, score) {
       if (!studentId || !name || score <= 0) return;
       
@@ -493,21 +456,25 @@
         score: Number(score)
       });
 
-      // 브라우저 백그라운드 전송 (CORS 우회 최적화)
+      // 1. sendBeacon 우선 전송
+      let sent = false;
       if (navigator.sendBeacon) {
-        const blob = new Blob([payload], { type: 'text/plain' });
-        navigator.sendBeacon(GAS_URL, blob);
-      } else {
+        const blob = new Blob([payload], { type: 'text/plain;charset=utf-8' });
+        sent = navigator.sendBeacon(GAS_URL, blob);
+      }
+
+      // 2. 비콘 미지원 또는 실패 시 fetch no-cors 전송
+      if (!sent) {
         fetch(GAS_URL, {
           method: 'POST',
           mode: 'no-cors',
-          headers: { 'Content-Type': 'text/plain' },
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: payload
         }).catch(err => console.error("점수 전송 에러:", err));
       }
 
-      // 잠시 후 랭킹 목록 재호출
-      setTimeout(fetchLeaderboard, 1200);
+      // 점수 전송 후 1.5초 뒤 랭킹 리프레시
+      setTimeout(fetchLeaderboard, 1500);
     }
 
     function renderLeaderboard(data) {
@@ -527,7 +494,7 @@
       let html = '';
       data.slice(0, 50).forEach((item, index) => {
         const rank = index + 1;
-        const isMe = (currentUser.studentId && item.studentId === currentUser.studentId);
+        const isMe = (currentUser.studentId && String(item.studentId) === String(currentUser.studentId));
         
         let badgeStyle = "bg-slate-800 text-slate-400";
         let rankIcon = rank;
@@ -568,22 +535,12 @@
       container.innerHTML = html;
     }
 
-    function renderFallbackLeaderboard() {
-      // 최초 실행 및 연결 준비 동안 안내 뷰
-      const sample = [
-        { rank: 1, studentId: '20101', name: '김관산', score: 18450 },
-        { rank: 2, studentId: '30412', name: '이민호', score: 14220 },
-        { rank: 3, studentId: '10205', name: '박지수', score: 9860 }
-      ];
-      renderLeaderboard(sample);
-    }
-
     function escapeHtml(str) {
       return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
     /* -------------------------------------------------------------
-       4. 2048 게임 코어 엔진
+       2048 게임 엔진
     ------------------------------------------------------------- */
     const SIZE = 4;
     let board = [];
@@ -591,7 +548,6 @@
     let bestScore = 0;
     let isGameOver = false;
 
-    // 타일별 다크모드 색상 팔레트
     const TILE_COLORS = {
       2:    { bg: '#1e293b', text: '#f1f5f9', glow: 'none' },
       4:    { bg: '#334155', text: '#f8fafc', glow: 'none' },
@@ -665,7 +621,6 @@
             tile.style.color = conf.text;
             tile.style.boxShadow = conf.glow;
             
-            // 타일 폰트 크기 조절
             let textSize = "text-xl sm:text-2xl";
             if (val >= 128) textSize = "text-lg sm:text-xl";
             if (val >= 1024) textSize = "text-sm sm:text-base";
@@ -677,21 +632,13 @@
       }
     }
 
-    // 0: 상, 1: 우, 2: 하, 3: 좌
     function move(direction) {
       if (isGameOver) return;
 
-      let rotated = false;
       let rotatedBoard = JSON.parse(JSON.stringify(board));
-
-      // 모든 방향 처리를 '왼쪽 밀기'로 통일하기 위해 회전
-      if (direction === 0) { // UP
-        rotatedBoard = rotateCounterClockwise(rotatedBoard);
-      } else if (direction === 1) { // RIGHT
-        rotatedBoard = rotateClockwise(rotateClockwise(rotatedBoard));
-      } else if (direction === 2) { // DOWN
-        rotatedBoard = rotateClockwise(rotatedBoard);
-      }
+      if (direction === 0) rotatedBoard = rotateCounterClockwise(rotatedBoard);
+      else if (direction === 1) rotatedBoard = rotateClockwise(rotateClockwise(rotatedBoard));
+      else if (direction === 2) rotatedBoard = rotateClockwise(rotatedBoard);
 
       let moved = false;
       let addedScore = 0;
@@ -705,15 +652,13 @@
             const mergedVal = row[i] * 2;
             newRow.push(mergedVal);
             addedScore += mergedVal;
-            i++; // 병합된 원소 건너뜀
+            i++;
           } else {
             newRow.push(row[i]);
           }
         }
 
-        while (newRow.length < SIZE) {
-          newRow.push(0);
-        }
+        while (newRow.length < SIZE) newRow.push(0);
 
         for (let c = 0; c < SIZE; c++) {
           if (rotatedBoard[r][c] !== newRow[c]) moved = true;
@@ -721,16 +666,10 @@
         }
       }
 
-      // 원래 각도로 원상 복구
-      if (direction === 0) {
-        board = rotateClockwise(rotatedBoard);
-      } else if (direction === 1) {
-        board = rotateClockwise(rotateClockwise(rotatedBoard));
-      } else if (direction === 2) {
-        board = rotateCounterClockwise(rotatedBoard);
-      } else {
-        board = rotatedBoard;
-      }
+      if (direction === 0) board = rotateClockwise(rotatedBoard);
+      else if (direction === 1) board = rotateClockwise(rotateClockwise(rotatedBoard));
+      else if (direction === 2) board = rotateCounterClockwise(rotatedBoard);
+      else board = rotatedBoard;
 
       if (moved) {
         score += addedScore;
@@ -739,18 +678,14 @@
         addRandomTile();
         renderBoard();
 
-        if (checkGameOver()) {
-          triggerGameOver();
-        }
+        if (checkGameOver()) triggerGameOver();
       }
     }
 
     function rotateClockwise(m) {
       const res = Array.from({ length: SIZE }, () => Array(SIZE).fill(0));
       for (let r = 0; r < SIZE; r++) {
-        for (let c = 0; c < SIZE; c++) {
-          res[c][SIZE - 1 - r] = m[r][c];
-        }
+        for (let c = 0; c < SIZE; c++) res[c][SIZE - 1 - r] = m[r][c];
       }
       return res;
     }
@@ -758,21 +693,17 @@
     function rotateCounterClockwise(m) {
       const res = Array.from({ length: SIZE }, () => Array(SIZE).fill(0));
       for (let r = 0; r < SIZE; r++) {
-        for (let c = 0; c < SIZE; c++) {
-          res[SIZE - 1 - c][r] = m[r][c];
-        }
+        for (let c = 0; c < SIZE; c++) res[SIZE - 1 - c][r] = m[r][c];
       }
       return res;
     }
 
     function checkGameOver() {
-      // 1. 빈 칸이 남아있으면 게임 오버 아님
       for (let r = 0; r < SIZE; r++) {
         for (let c = 0; c < SIZE; c++) {
           if (board[r][c] === 0) return false;
         }
       }
-      // 2. 가로/세로로 합칠 수 있는 타일이 남아있으면 게임 오버 아님
       for (let r = 0; r < SIZE; r++) {
         for (let c = 0; c < SIZE; c++) {
           const cur = board[r][c];
@@ -789,17 +720,15 @@
       overlay.classList.remove('hidden');
       overlay.classList.add('flex');
 
-      // 최종 점수를 스프레드시트로 전송
       if (score > 0 && currentUser.studentId && currentUser.name) {
         submitScoreToGAS(currentUser.studentId, currentUser.name, score);
       }
     }
 
     /* -------------------------------------------------------------
-       5. 입력 이벤트 핸들러 (키보드 & 스와이프)
+       입력 & UI 이벤트 핸들러
     ------------------------------------------------------------- */
     window.addEventListener('keydown', (e) => {
-      // 모달 열림 상태일 때는 게임 조작 방지
       if (!document.getElementById('loginModal').classList.contains('hidden')) return;
       if (!document.getElementById('tutorialModal').classList.contains('hidden')) return;
 
@@ -831,7 +760,6 @@
       }
     });
 
-    // 모바일 터치 제스처 스와이프 구현
     let touchStartX = 0;
     let touchStartY = 0;
     const boardEl = document.getElementById('gridContainer');
@@ -848,19 +776,12 @@
       const absDx = Math.abs(dx);
       const absDy = Math.abs(dy);
 
-      // 최소 25px 이상 스와이프해야 반응
       if (Math.max(absDx, absDy) > 25) {
-        if (absDx > absDy) {
-          move(dx > 0 ? 1 : 3); // 우/좌
-        } else {
-          move(dy > 0 ? 2 : 0); // 하/상
-        }
+        if (absDx > absDy) move(dx > 0 ? 1 : 3);
+        else move(dy > 0 ? 2 : 0);
       }
     }, { passive: true });
 
-    /* -------------------------------------------------------------
-       6. UI 모달 및 드로어 제어
-    ------------------------------------------------------------- */
     function toggleTutorial(show) {
       const modal = document.getElementById('tutorialModal');
       if (show) modal.classList.remove('hidden');
@@ -879,9 +800,6 @@
       }
     }
 
-    /* -------------------------------------------------------------
-       7. 초기 구동
-    ------------------------------------------------------------- */
     window.addEventListener('DOMContentLoaded', () => {
       setLanguage('ko');
       
@@ -895,8 +813,8 @@
       initGame();
       fetchLeaderboard();
 
-      // 30초마다 랭킹 자동 갱신
-      setInterval(fetchLeaderboard, 30000);
+      // 25초마다 실시간 랭킹 백그라운드 갱신
+      setInterval(fetchLeaderboard, 25000);
     });
   </script>
 </body>
